@@ -1,13 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Poppins';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+  padding: 0;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  width: '100%';
+  max-width: 75vw !important;
+}
+.ProseMirror br {
+  display: block;
+  content: "";
+  margin-bottom: 50px; 
+  border-top: 2px dashed #ccc;
+}
+
+.toolbar button {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+
+.editor-container {
+  border: 1px solid #ddd;
+  padding: 10px;
+  min-height: 200px;
+}
+
+canvas {
+  border: 1px solid #ddd;
+  width: 100%;
+  height: auto;
+  margin-top: 20px;
+}
+/* Ensure the editor has padding and background */
+.ProseMirror {
+  min-height: 300px;
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+  outline: none;
+}
+
+/* Add focus effect */
+.ProseMirror:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.5);
+}
+
+/* Styling headings */
+.ProseMirror h1 { font-size: 2rem; font-weight: bold; color: #333; }
+.ProseMirror h2 { font-size: 1.75rem; font-weight: bold; color: #444; }
+.ProseMirror h3 { font-size: 1.5rem; font-weight: bold; color: #555; }
+
+
+/* Paragraph styling */
+.ProseMirror p { font-size: 1rem; color: #222; line-height: 1.5; }
+
+/* Bold, Italic, Underline */
+.ProseMirror b, .ProseMirror strong { font-weight: bold; color: #000; }
+.ProseMirror i, .ProseMirror em { font-style: italic; }
+.ProseMirror u { text-decoration: underline; }
+.ProseMirror s { text-decoration: line-through; }
+
+/* Link Styling */
+.ProseMirror a {
+  color: #007bff;
+  text-decoration: underline;
+}
+.ProseMirror a:hover {
+  color: #0056b3;
+}
+
+/* List styling */
+.ProseMirror ul { padding-left: 20px; list-style-type: disc; }
+.ProseMirror ol { padding-left: 20px; list-style-type: decimal; }
+
+/* Blockquotes */
+.ProseMirror blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 10px;
+  font-style: italic;
+  color: #666;
+}
+
+/* Image */
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* Custom toolbar styles */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.toolbar button {
+  padding: 5px 10px;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.toolbar button:hover {
+  background: #e9ecef;
+}
+
+.toolbar button.is-active {
+  background: #007bff;
+  color: #fff;
+}
+
+
