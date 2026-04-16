@@ -3,13 +3,33 @@ import React from "react";
 import { fontSize, fontWeight } from "../Style/GlobalStyle";
 
 export default function CustomeInput(props) {
-  const { name, value, changeHandler, label, type, placeholder, max, min, labelClassName } =
-    props;
+  const {
+    name,
+    value,
+    changeHandler,
+    label,
+    type,
+    placeholder,
+    max,
+    min,
+    labelClassName,
+    onKeyDown,
+    autoFocus = false,
+  } = props;
   return (
-    <InputStyle >
-      <Box style={{ width: "80%", display: "flex", flexDirection: 'column', margin: 'auto' }}>
-        <label htmlFor={name} className={labelClassName}>{label}</label>
-        <input  
+    <InputStyle>
+      <Box
+        style={{
+          width: "80%",
+          display: "flex",
+          flexDirection: "column",
+          margin: "auto",
+        }}  
+      >
+        <label htmlFor={name} className={labelClassName}>
+          {label}
+        </label>
+        <input
           name={name}
           className="input-style text-sm font-medium md:text-sm sm:text-sm"
           value={value}
@@ -19,6 +39,8 @@ export default function CustomeInput(props) {
           max={max}
           min={min}
           autoComplete="off"
+          onKeyDown={onKeyDown}
+          autoFocus={autoFocus}
         />
       </Box>
     </InputStyle>

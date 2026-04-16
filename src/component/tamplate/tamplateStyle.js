@@ -10,7 +10,4 @@ export const TemplateStyle = styled(Box)({
       display: "none",
     },
   },
- 
-
-
 });

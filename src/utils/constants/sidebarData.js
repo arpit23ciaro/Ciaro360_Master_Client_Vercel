@@ -1,14 +1,15 @@
 import panel from "../../assest/panel.svg";
+import users from "../../assest/users.svg";
 
 export const SideBarData = [
   {
-    title: "Orgnization Mangement",
+    title: "Org Management",
     icon: panel,
-    link:"/org_management"
+    link: "/org_management",
   },
   {
     title: "User Management",
-    icon: panel,
-    link:"/user_management"
-  }
+    icon: users,
+    link: "/user_management",
+  },
 ];

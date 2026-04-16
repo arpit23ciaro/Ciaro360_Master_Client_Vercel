@@ -139,6 +139,7 @@ const UserManagement = () => {
     if (!string) return "";
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
+
   return (
     <GlobleStyle>
       <Box className="parent-container">

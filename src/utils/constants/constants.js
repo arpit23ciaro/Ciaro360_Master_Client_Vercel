@@ -1,7 +1,17 @@
-// export const baseURL = "http://192.168.0.236:4444";
-export const baseURL = "https://server-code-git-main-vishaljadons-projects.vercel.app";
+export const baseURL = "http://192.168.0.236:4000";
+// export const baseURL =
+//   "https://server-code-git-main-vishaljadons-projects.vercel.app";
 
-export const RegExp = {
-    mailRegEx :  /^[0-9a-z]+(?:\.[0-9a-z]+)*@[ciaro]{5,}(?:\.[io]{2,})+$/gm,
-    passwordRegex :/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/,
-}
+export const RegExp =
+  /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>]).*$/;
+
+export const regex = {
+  uppercase: /(?=.*[A-Z])/,
+  lowercase: /(?=.*[a-z])/,
+  number: /(?=.*[0-9])/,
+  specialChar: /(?=.*[!@#$%^&*()_-])/,
+  // specialChar: /(?=.*[!@#$%^&*(),.?":{}|<>])/,
+};
+
+export const EmailRegExp =
+  /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
