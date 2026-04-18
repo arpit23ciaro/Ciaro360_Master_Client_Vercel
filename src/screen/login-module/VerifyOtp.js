@@ -107,6 +107,7 @@ export default function VerifyOtp() {
       const firstname = await checkOTPResponse?.data?.name;
       const access = await checkOTPResponse?.data?.access;
       localStorage.setItem("userAccess", JSON.stringify(access));
+      setAccess(access);
 
       setFirstName(firstname);
       localStorage.setItem("firstName", firstname);

@@ -27,7 +27,11 @@ export default function USerContextProvider({ children }) {
 
   const [toggleDrawer, setToggleDrawer] = useState(false);
   const [genrateQR, setGenrateQR] = useState(null);
-  const [access, setAccess] = useState(null);
+  const [access, setAccess] = useState(() => {
+    const stored = localStorage.getItem("userAccess");
+    return stored && stored !== "undefined" ? JSON.parse(stored) : {};
+  });
+  console.log("print ",access)
   const [answeredByClient, setAnsweredByClient] = useState(null);
 
   const [accessToken, setAccessToken] = useState(localStorage.getItem("token"));
@@ -46,7 +50,7 @@ export default function USerContextProvider({ children }) {
   );
 
   const resetUserContext = () => {
-    setEmail(null)
+    setEmail(null);
     setSuperAdminUsername(null);
     setSuperAdminEmail(null);
     setFirstName(null);
@@ -55,7 +59,7 @@ export default function USerContextProvider({ children }) {
     setTpEmail({ email: null, name: null });
     setOrgID(null);
     setIsSA(null);
-    setToggleDrawer(false); 
+    setToggleDrawer(false);
     setGenrateQR(null);
     setAccess(null);
     setAnsweredByClient(null);

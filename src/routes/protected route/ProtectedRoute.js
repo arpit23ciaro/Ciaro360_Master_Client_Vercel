@@ -15,7 +15,6 @@ const ProtectedRoute = () => {
       hasPermission(item, "edit") ||
       hasPermission(item, "fullAccess"),
   );
-  setAccess(hasAnyAccess);
   return hasAnyAccess ? (
     <Outlet />
   ) : accessToken ? (
