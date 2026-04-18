@@ -59,7 +59,7 @@ const UpdateFrameworkModal = ({
   const [isFrameworkFocused, setIsFrameworkFocused] = useState(false);
   const frameworks = [
     { label: "ISO 27001:2022", value: "ISO 27001:2022" },
-    { label: "SOC 2", value: "SOC 2" },
+    // { label: "SOC 2", value: "SOC 2" },
   ];
   const existingFrameworkValues = data?.map((item) => item?.name) || [];
 
