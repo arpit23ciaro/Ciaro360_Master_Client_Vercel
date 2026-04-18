@@ -28,7 +28,7 @@ import { SendUserOtp } from "../../services/auth/SendUserOtp";
 import { LoginAPI } from "../../services/auth/LoginAPI";
 
 export default function VerifyOtp() {
-  const { email, firstName, setFirstName, setAccessToken } =
+  const { email, firstName, setFirstName, setAccessToken, setAccess } =
     useContext(UserContext);
 
   const navigate = useNavigate();
@@ -105,11 +105,13 @@ export default function VerifyOtp() {
       localStorage?.setItem("token", accessToken);
 
       const firstname = await checkOTPResponse?.data?.name;
+      const access = await checkOTPResponse?.data?.access;
+      localStorage.setItem("userAccess", JSON.stringify(access));
 
       setFirstName(firstname);
       localStorage.setItem("firstName", firstname);
 
-      navigate(`/org_management`);
+      setTimeout(() => navigate("/org_management"), 0);
     }
   };
 
@@ -137,7 +139,7 @@ export default function VerifyOtp() {
                   <img src={ciaroLogo} alt="ciaroLogo" width={200} />
                 </Box>
                 <Box className="login-container">
-                  <Box sx={{width:"100%"}}>
+                  <Box sx={{ width: "100%" }}>
                     <Typography className="welcome-text">
                       Welcome {firstName || ""}
                     </Typography>

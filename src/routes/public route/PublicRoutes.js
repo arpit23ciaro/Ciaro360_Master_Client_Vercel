@@ -9,8 +9,11 @@ import OrganizationManagement from "../../screen/orgManagement/OrganizationManag
 import Header from "../../component/Header";
 import ProtectedRoute from "../protected route/ProtectedRoute";
 import ViewOrganization from "../../screen/orgManagement/ViewOrganization";
+import useAccess from "../../utils/Permission/HasAccess";
+import NotAuth from "../../component/NoAuth";
 
 const PublicRoutes = () => {
+  const { hasPermission } = useAccess();
   return (
     <Routes>
       <Route path="/" Component={Login} />
@@ -18,6 +21,7 @@ const PublicRoutes = () => {
 
       <Route path="/verify_otp" Component={VerifyOtp} />
       <Route path="/dashboard" Component={Home} />
+      <Route path="/unauthorized" element={<NotAuth />} />
 
       <Route element={<ProtectedRoute />}>
         <Route
@@ -28,10 +32,43 @@ const PublicRoutes = () => {
             </>
           }
         >
-          <Route path="/user_management" Component={UserMangement} />
-          <Route path="/org_management" Component={OrganizationManagement} />
-          <Route path="/org_management/:id" Component={ViewOrganization} />
-
+          {(hasPermission("userManagement", "fullAccess") ||
+            hasPermission("userManagement", "edit") ||
+            hasPermission("userManagement", "view")) && (
+            <Route
+              path="/user_management"
+              element={
+                <UserMangement
+                  canEdit={hasPermission("userManagement", "edit")}
+                  hasFullAccess={hasPermission("userManagement", "fullAccess")}
+                />
+              }
+            />
+          )}
+          {(hasPermission("orgManagement", "fullAccess") ||
+            hasPermission("orgManagement", "edit") ||
+            hasPermission("orgManagement", "view")) && (
+            <>
+              <Route
+                path="/org_management"
+                element={
+                  <OrganizationManagement
+                    canEdit={hasPermission("orgManagement", "edit")}
+                    hasFullAccess={hasPermission("orgManagement", "fullAccess")}
+                  />
+                }
+              />
+              <Route
+                path="/org_management/:id"
+                element={
+                  <ViewOrganization
+                    canEdit={hasPermission("orgManagement", "edit")}
+                    hasFullAccess={hasPermission("orgManagement", "fullAccess")}
+                  />
+                }
+              />
+            </>
+          )}
         </Route>
       </Route>
     </Routes>

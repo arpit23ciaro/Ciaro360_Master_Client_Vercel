@@ -175,9 +175,10 @@ const GlobleStyle = styled(Box)(({ open }) => ({
     width: "fit-content",
     padding: "0.8rem",
     maxHeight: "fit-content",
-    boxSizing: "border-box",
-    fontFamily: "Poppins",
-    borderRadius: "1rem",
+    "&:disabled": {
+      backgroundColor: "#C3C3C3",
+      fontWeight: fontWeight.bold,
+    },
   },
   "& .create-policy-label": {
     color: colors.white,
@@ -186,8 +187,10 @@ const GlobleStyle = styled(Box)(({ open }) => ({
     justifyContent: "space-evenly",
     alignItems: "center",
     gap: "0.5rem",
-    boxSizing: "border-box",
-    fontFamily: "Poppins",
+    "&:disabled": {
+      backgroundColor: "#C3C3C3",
+      fontWeight: fontWeight.bold,
+    },
   },
   "& .login-container": {
     width: "100%",
@@ -351,6 +354,9 @@ const GlobleStyle = styled(Box)(({ open }) => ({
     fontFamily: "Poppins",
     background: colors.aquasky,
     color: colors.white,
+    "&:hover": {
+      backgroundColor: "#00b8a9",
+    },
     "&:hover": {
       backgroundColor: "#00b8a9",
     },

@@ -21,44 +21,93 @@ import dayjs from "dayjs";
 import { OffBoardOrganization } from "../../services/organization/OffBoardOrganization";
 import { useParams } from "react-router-dom";
 import { UpdateDataRetentionDate } from "../../services/organization/UpdateDataRetentionDate";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 
+dayjs.extend(customParseFormat);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+/**
+ * OffboardOrganizationModal
+ *
+ * Props:
+ *  - isOffboarded: boolean
+ *      false → Full form (all fields editable). Triggered by the "Offboard" button
+ *              on an OnBoarded org. Submits offboard request → status becomes
+ *              "Ready To OffBoard".
+ *      true  → Retention-date-only mode. Triggered from the alert banner for orgs
+ *              already in "Ready To OffBoard" or "OffBoarded" status. Offboard date
+ *              and reason are locked; only the retention date can be updated.
+ */
 const OffboardOrganizationModal = ({
   open,
   onClose,
   refreshList,
   organizationData = null,
+  isOffboarded = false,
 }) => {
   const { id } = useParams();
   const [btnLoading, setBtnLoading] = useState(false);
 
-  const validationSchema = Yup.object({
-    offboardDate: Yup.date()
-      .nullable()
-      .required("Offboarding date is required"),
-
-    offboardReason: Yup.string().trim().required("Offboard reason is required"),
-  });
+  // When isOffboarded=true we only validate + submit the retention date.
+  const validationSchema = isOffboarded
+    ? Yup.object({
+        retentionDate: Yup.date()
+          .nullable()
+          .required("Retention date is required"),
+        // offboardDate and offboardReason are not validated — they're disabled
+        offboardDate: Yup.date().nullable(),
+        offboardReason: Yup.string(),
+      })
+    : Yup.object({
+        offboardDate: Yup.date()
+          .nullable()
+          .required("Offboarding date is required"),
+        retentionDate: Yup.date()
+          .nullable()
+          .required("Retention date is required"),
+        offboardReason: Yup.string()
+          .trim()
+          .required("Offboard reason is required"),
+      });
 
   const handleSubmit = async (values) => {
     setBtnLoading(true);
     try {
-      const payload = {
-        ...values,
-        offboardDate: values.offboardDate
-          ? dayjs(values.offboardDate).toISOString()
-          : null,
-      };
+      if (isOffboarded) {
+        // ── Retention-date-only update ──
+        // Only update the retention/data-deletion date.
+        const retentionDate = values.retentionDate
+          ? dayjs(values.retentionDate).toISOString()
+          : null;
 
-      const retentionDate = values.retentionDate
-        ? dayjs(values.retentionDate).toISOString()
-        : null;
+        const response = await UpdateDataRetentionDate(id, retentionDate);
+        if (response?.status) {
+          refreshList();
+          onClose();
+        }
+      } else {
+        // ── Full offboard flow ──
+        // 1. Offboard the org → status becomes "Ready To OffBoard"
+        // 2. Set the data retention/deletion date
+        const payload = {
+          ...values,
+          offboardDate: values.offboardDate
+            ? dayjs(values.offboardDate).toISOString()
+            : null,
+          retentionDate: values.retentionDate
+            ? dayjs(values.retentionDate).toISOString()
+            : null,
+        };
 
-      const response1 = await OffBoardOrganization(id, payload);
-      const response2 = await UpdateDataRetentionDate(id, retentionDate);
+        const response1 = await OffBoardOrganization(id, payload);
 
-      if (response1?.status) {
-        refreshList();
-        onClose();
+        if (response1?.status) {
+          refreshList();
+          onClose();
+        }
       }
     } catch (error) {
       console.error("Error offboarding organization:", error);
@@ -76,15 +125,13 @@ const OffboardOrganizationModal = ({
     >
       <Sheet variant="outlined" className="modal-container">
         <GlobleStyle>
-          {/* Header */}
+          {/* ── Header ── */}
           <Box className="modal-header">
             <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <WarningAmberIcon sx={{ color: "#D32F2F", fontSize: "22px" }} />
-              <Typography
-                className="create-modal-heading"
-                sx={{ color: "#D32F2F" }}
-              >
-                Offboard Organization
+              <Typography className="create-modal-heading">
+                {isOffboarded
+                  ? "Update Retention Date"
+                  : "Offboard Organization Details"}
               </Typography>
             </Box>
             <IconButton onClick={onClose}>
@@ -94,9 +141,29 @@ const OffboardOrganizationModal = ({
 
           <Formik
             initialValues={{
-              offboardDate: null,
-              offboardReason: "",
-              retentionDate: null,
+              offboardReason: organizationData?.offboardingReason
+                ? organizationData?.offboardingReason
+                : "",
+              offboardDate: (() => {
+                const d = dayjs(
+                  organizationData?.offboardingDate,
+                  "DD-MM-YYYY",
+                  true,
+                );
+                return d.isValid()
+                  ? d.tz("UTC", true).startOf("day").utc().toISOString()
+                  : null;
+              })(),
+              retentionDate: (() => {
+                const d = dayjs(
+                  organizationData?.dataDeletionDate,
+                  "DD-MM-YYYY",
+                  true,
+                );
+                return d.isValid()
+                  ? d.tz("UTC", true).startOf("day").utc().toISOString()
+                  : null;
+              })(),
             }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
@@ -110,116 +177,85 @@ const OffboardOrganizationModal = ({
               handleBlur,
               isValid,
               dirty,
+              setFieldTouched,
             }) => (
               <Form style={{ width: "100%" }}>
                 <Box className="modal-body">
-                  {/* Warning Banner */}
-                  <Box
-                    sx={{
-                      mt: 1,
-                      mb: 2,
-                      p: 1.5,
-                      backgroundColor: "#FFF3F3",
-                      border: "1px solid #FFCDD2",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontFamily: "Poppins",
-                        fontSize: "13px",
-                        color: "#B71C1C",
-                        fontWeight: 500,
-                      }}
-                    >
-                      This action will:
-                    </Typography>
-                    <Box
-                      component="ul"
-                      sx={{
-                        mt: 0.5,
-                        pl: 2,
-                        mb: 0,
-                        fontFamily: "Poppins",
-                        fontSize: "12px",
-                        color: "#C62828",
-                      }}
-                    >
-                      <li>Deactivate the super admin account</li>
-                      <li>Revoke access to all subscribed frameworks</li>
-                      <li>Mark the organization as offboarded</li>
-                      <li>
-                        Preserve contract details and audit logs for records
-                      </li>
-                    </Box>
-                  </Box>
-
-                  {/* Org Summary */}
-                  {organizationData && (
-                    <Box
-                      sx={{
-                        mb: 2,
-                        p: 1.5,
-                        backgroundColor: "#F5F5F5",
-                        borderRadius: "8px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "4px",
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          fontFamily: "Poppins",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {organizationData?.organizationName}
-                      </Typography>
-                      <Typography sx={{ fontSize: "12px", color: "#666" }}>
-                        Super Admin: {organizationData?.saEmail || "N/A"}
-                      </Typography>
-                      <Typography sx={{ fontSize: "12px", color: "#666" }}>
-                        Frameworks:{" "}
-                        {organizationData?.frameworks
-                          ?.map((f) => f?.name || f)
-                          .join(", ") || "N/A"}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {/* ✅ Offboarding Date */}
+                  {/* ── Offboarding Date (locked when isOffboarded) ── */}
                   <Box sx={{ mb: 2 }}>
                     <label className="policy-form-label">
                       Offboarding Date
-                      <span className="required-icon">*</span>
+                      {!isOffboarded && (
+                        <span className="required-icon">*</span>
+                      )}
                     </label>
 
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
-                        value={values.offboardDate}
-                        onChange={(date) => setFieldValue("offboardDate", date)}
-                        disableFuture
+                        key={values.offboardDate?.toString()}
+                        value={
+                          values?.offboardDate
+                            ? dayjs(values?.offboardDate)
+                            : null
+                        }
+                        onChange={(date) => {
+                          if (dayjs(date).isValid()) {
+                            const utcDate = dayjs(date)
+                              .tz("UTC", true)
+                              .startOf("day")
+                              .utc();
+                            setFieldValue(
+                              "offboardDate",
+                              utcDate.toISOString(),
+                            );
+                          }
+                        }}
+                        // Always locked once offboarding has been initiated
+                        disabled={isOffboarded}
+                        maxDate={
+                          values.retentionDate
+                            ? dayjs(values.retentionDate)
+                            : undefined
+                        }
                         slotProps={{
                           textField: {
                             fullWidth: true,
-                            size: "small",
-                            error:
-                              touched.offboardDate && !!errors.offboardDate,
-                            helperText:
-                              touched.offboardDate && errors.offboardDate,
+                            onBlur: () => setFieldTouched("offboardDate", true),
+                            sx: {
+                              "*": { fontFamily: "Poppins !important" },
+                              "& .MuiInputBase-root": { height: "36px" },
+                              "& .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline":
+                                { borderColor: "#d9d9d9" },
+                              "& .MuiOutlinedInput-root": {
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                  { borderColor: "black" },
+                              },
+                            },
+                          },
+                          desktopPaper: {
+                            sx: { "*": { fontFamily: "Poppins !important" } },
+                          },
+                          mobilePaper: {
+                            sx: { "*": { fontFamily: "Poppins !important" } },
                           },
                         }}
                         format="DD/MM/YYYY"
                       />
                     </LocalizationProvider>
+                    {touched.offboardDate && errors.offboardDate && (
+                      <Typography color="error" variant="caption">
+                        {errors.offboardDate}
+                      </Typography>
+                    )}
                   </Box>
 
-                  {/* Reason */}
+                  {/* ── Reason for Offboarding (locked when isOffboarded) ── */}
                   <Box sx={{ mb: 2 }}>
                     <label className="policy-form-label">
                       Reason for Offboarding
-                      <span className="required-icon">*</span>
+                      {!isOffboarded && (
+                        <span className="required-icon">*</span>
+                      )}
                     </label>
                     <CustomTextArea
                       name="offboardReason"
@@ -229,20 +265,25 @@ const OffboardOrganizationModal = ({
                       className="text-area-style"
                       style={{
                         width: "100%",
-                        // minHeight: "1.5rem",
                         padding: "8px",
                         fontSize: "16px",
                         border: "1px solid rgba(0, 0, 0, .2)",
                         webkitBackgroundClip: "padding-box",
-                        backgroundClip: " padding-box",
+                        backgroundClip: "padding-box",
                         borderRadius: "0.5rem",
                         resize: "none",
                         boxSizing: "border-box",
                         fontFamily: "Poppins",
+                        // Visual cue that this field is locked
+                        background: isOffboarded ? "#f5f5f5" : undefined,
+                        color: isOffboarded ? "#999" : undefined,
+                        cursor: isOffboarded ? "not-allowed" : undefined,
                       }}
                       value={values.offboardReason}
                       onChange={handleChange}
                       onBlur={handleBlur}
+                      // Always locked once offboarding has been initiated
+                      disabled={isOffboarded}
                     />
                     {touched.offboardReason && errors.offboardReason && (
                       <Typography color="error" variant="caption">
@@ -251,6 +292,7 @@ const OffboardOrganizationModal = ({
                     )}
                   </Box>
 
+                  {/* ── Retention Expiry Date (always editable) ── */}
                   <Box sx={{ mb: 2 }}>
                     <label className="policy-form-label">
                       Retention Expiry Date
@@ -259,28 +301,65 @@ const OffboardOrganizationModal = ({
 
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
-                        value={values.retentionDate}
-                        onChange={(date) =>
-                          setFieldValue("retentionDate", date)
+                        key={values.retentionDate?.toString()}
+                        value={
+                          values?.retentionDate
+                            ? dayjs(values?.retentionDate)
+                            : null
                         }
-                        disableFuture
+                        onChange={(date) => {
+                          if (dayjs(date).isValid()) {
+                            const utcDate = dayjs(date)
+                              .tz("UTC", true)
+                              .startOf("day")
+                              .utc();
+                            setFieldValue(
+                              "retentionDate",
+                              utcDate.toISOString(),
+                            );
+                          }
+                        }}
+                        // Must be on or after the offboard date
+                        minDate={
+                          values.offboardDate
+                            ? dayjs(values.offboardDate)
+                            : undefined
+                        }
                         slotProps={{
                           textField: {
                             fullWidth: true,
-                            size: "small",
-                            error:
-                              touched.retentionDate && !!errors.retentionDate,
-                            helperText:
-                              touched.retentionDate && errors.retentionDate,
+                            onBlur: () =>
+                              setFieldTouched("retentionDate", true),
+                            sx: {
+                              "*": { fontFamily: "Poppins !important" },
+                              "& .MuiInputBase-root": { height: "36px" },
+                              "& .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline":
+                                { borderColor: "#d9d9d9" },
+                              "& .MuiOutlinedInput-root": {
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                  { borderColor: "black" },
+                              },
+                            },
+                          },
+                          desktopPaper: {
+                            sx: { "*": { fontFamily: "Poppins !important" } },
+                          },
+                          mobilePaper: {
+                            sx: { "*": { fontFamily: "Poppins !important" } },
                           },
                         }}
                         format="DD/MM/YYYY"
                       />
                     </LocalizationProvider>
+                    {touched.retentionDate && errors.retentionDate && (
+                      <Typography color="error" variant="caption">
+                        {errors.retentionDate}
+                      </Typography>
+                    )}
                   </Box>
                 </Box>
 
-                {/* Footer */}
+                {/* ── Footer ── */}
                 <Box className="modal-footer" sx={{ gap: "10px" }}>
                   <Button
                     type="button"
@@ -291,22 +370,29 @@ const OffboardOrganizationModal = ({
                       background: colors.white,
                       color: colors.black,
                       textTransform: "none",
+                      "&:hover": {
+                        backgroundColor: `${colors.white} !important`,
+                      },
                     }}
                   >
                     Cancel
                   </Button>
 
                   <Button
+                    loading={btnLoading}
                     type="submit"
-                    className="policy-btn"
+                    className="policy-btn policy-submit-btn"
                     disabled={btnLoading || !isValid || !dirty}
-                    sx={{
-                      background: "#D32F2F",
-                      color: "#fff",
-                      textTransform: "none",
-                    }}
+                    // sx={{
+                    //   background: "#D32F2F",
+                    //   color: "#fff",
+                    //   textTransform: "none",
+                    //   "&:hover": {
+                    //     backgroundColor: `#D32F2F !important`,
+                    //   },
+                    // }}
                   >
-                    Confirm Offboard
+                    {isOffboarded ? "Update Retention Date" : "Submit"}
                   </Button>
                 </Box>
               </Form>

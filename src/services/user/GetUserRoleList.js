@@ -1,17 +1,11 @@
-import { organizationEP } from "../../utils/config/config";
 import axiosInstance from "../../utils/axios config/axiosConfig";
+import { userRoleListEP } from "../../utils/config/config";
 
-export const UpdateDataRetentionDate = async (id, retentionDate) => {
-  const body = {
-    dataDeletionDate: retentionDate,
-  };
-  const url = `${organizationEP}/${id}/offboard`;
+export const GetUserRoleList = async () => {
   try {
-    const response = await axiosInstance.put(url, body, {
-      withCredentials: true,
-    });
+    const response = await axiosInstance.get(userRoleListEP);
     if (response?.status === 200) {
-      return response?.data;
+      return response;
     }
   } catch (error) {
     if (error?.response && error?.response?.data) {

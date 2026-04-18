@@ -55,7 +55,7 @@ export default function USerContextProvider({ children }) {
     setTpEmail({ email: null, name: null });
     setOrgID(null);
     setIsSA(null);
-    setToggleDrawer(false);
+    setToggleDrawer(false); 
     setGenrateQR(null);
     setAccess(null);
     setAnsweredByClient(null);

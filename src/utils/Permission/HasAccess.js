@@ -1,7 +1,7 @@
 const useAccess = () => {
   const stored = localStorage.getItem("userAccess");
 
-  const userAccess = stored !== "undefined" ? JSON.parse(stored) : {};
+  const userAccess = stored && stored !== "undefined" ? JSON.parse(stored) : {};
 
   const hasPermission = (module, permission) => {
     if (!userAccess || !userAccess?.[module]) return false;

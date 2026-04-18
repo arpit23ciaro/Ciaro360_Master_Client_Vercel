@@ -157,7 +157,7 @@ export default function Sidebar() {
           component="nav"
           sx={{
             position: "sticky",
-            top: "calc(46px + 2.1rem + 2%)",
+            top: "calc(46px + 2.4rem)",
             height: "100%",
             flexShrink: { sm: 0 },
             "& .MuiDrawer-paper": {

@@ -5,10 +5,11 @@ export const OffBoardOrganization = async (id, data) => {
   const body = {
     offboardingDate: data?.offboardDate,
     offboardingReason: data?.offboardReason,
+    dataDeletionDate: data?.retentionDate,
   };
   const url = `${organizationEP}/${id}/readyToOffBoard`;
   try {
-    const response = await axiosInstance.post(url, body, {
+    const response = await axiosInstance.put(url, body, {
       withCredentials: true,
     });
     if (response?.status === 200) {

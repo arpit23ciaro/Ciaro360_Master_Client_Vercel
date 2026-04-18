@@ -30,15 +30,16 @@ import { useNavigate, useParams } from "react-router";
 import UploadIcon from "../../assest/upload-icon.svg";
 import dayjs from "dayjs";
 import { AddOrganization } from "../../services/organization/AddOrganization";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-import customParseFormat from "dayjs/plugin/customParseFormat";
+
 import { UploadContractDetailsFile } from "../../services/organization/UploadContractDetailsFile";
 import { RemoveContractDetailsFile } from "../../services/organization/RemoveContractDetailsFile";
 import { UpdateOrganization } from "../../services/organization/UpdateOrganization";
 import { useToast } from "../../context/ToastProvider";
 import OrgDraftConfirmationModal from "./OrgDraftConfirmationModal";
 import AddSuperAdminModal from "./AddSuperAdminModal";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -55,11 +56,11 @@ const AddOrganizationModal = ({
   const navigate = useNavigate();
   const frameworks = [
     { label: "ISO 27001:2022", value: "ISO 27001:2022" },
-    { label: "SOC 2", value: "SOC 2" },
-    {
-      label: "Organization Identified Controls (OIC)",
-      value: "Organization Identified Controls (OIC)",
-    },
+    // { label: "SOC 2", value: "SOC 2" },
+    // {
+    //   label: "Organization Identified Controls (OIC)",
+    //   value: "Organization Identified Controls (OIC)",
+    // },
   ];
   const [showDraftConfirm, setShowDraftConfirm] = useState(false);
   const [openSuperAdminModal, setOpenSuperAdminModal] = useState(false);
@@ -99,6 +100,25 @@ const AddOrganizationModal = ({
       .required("Onboarding date is required"),
   });
 
+  const EditValidationSchema = Yup.object({
+    organizationName: Yup.string()
+      .trim()
+      .required("Organization Name is required"),
+
+    employeeSize: Yup.number()
+      .typeError("Employee size must be a number")
+      .min(1, "Employee size must be at least 1")
+      .required("Employee size is required"),
+
+    // subscribeFramework: Yup.array()
+    //   .min(1, "At least one framework must be selected")
+    //   .required("Framework is required"),
+
+    onboardingDate: Yup.date()
+      .typeError("Onboarding date is required")
+      .required("Onboarding date is required"),
+  });
+
   const handleSubmit = async (values) => {
     setBtnLoading(true);
     if (!isEdit) {
@@ -123,8 +143,8 @@ const AddOrganizationModal = ({
       }
     } else {
       try {
-        // const response = await UpdateOrganization(data?._id, values);
-        // if (response?.status) {
+        const response = await UpdateOrganization(data?._id, values);
+        if (response?.status) {
           //  UPLOAD new files
           if (uploadedFiles?.length > 0) {
             const res = await UploadContractDetailsFile(
@@ -144,10 +164,10 @@ const AddOrganizationModal = ({
             }
           }
 
-          // showToast(response?.msg, "success");
+          showToast(response?.msg, "success");
           refreshList();
           onClose();
-        // }
+        }
       } catch (error) {
         console.error("Error creating evidence requirement:", error);
       } finally {
@@ -219,7 +239,9 @@ const AddOrganizationModal = ({
                     : null;
                 })(),
               }}
-              validationSchema={validationSchema}
+              validationSchema={
+                isEdit ? EditValidationSchema : validationSchema
+              }
               onSubmit={handleSubmit}
             >
               {({
@@ -269,140 +291,146 @@ const AddOrganizationModal = ({
                     </Box>
 
                     {/* Super Admin — First Name & Last Name (side by side) */}
-                    <Box
-                      sx={{
-                        mb: 2,
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: "12px",
-                      }}
-                    >
-                      <Box>
-                        <label className="policy-form-label">
-                          First Name<span className="required-icon">*</span>
-                        </label>
-                        <CustomTextField
-                          name="superAdminFirstName"
-                          placeholder="Enter First Name"
-                          value={values.superAdminFirstName}
-                          autoComplete="off"
-                          onBlur={handleBlur}
-                          fullWidth
-                          size="small"
-                          onChange={(e) =>
-                            setFieldValue(
-                              "superAdminFirstName",
-                              e.target.value.replace(/^\s+/, ""),
-                            )
-                          }
-                        />
-                        {touched.superAdminFirstName &&
-                          errors.superAdminFirstName && (
-                            <Typography
-                              color="error"
-                              variant="caption"
-                              sx={{ fontFamily: "Poppins" }}
-                            >
-                              {errors.superAdminFirstName}
-                            </Typography>
-                          )}
-                      </Box>
+                    {!isEdit && (
+                      <Box
+                        sx={{
+                          mb: 2,
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "12px",
+                        }}
+                      >
+                        <Box>
+                          <label className="policy-form-label">
+                            First Name<span className="required-icon">*</span>
+                          </label>
+                          <CustomTextField
+                            name="superAdminFirstName"
+                            placeholder="Enter First Name"
+                            value={values.superAdminFirstName}
+                            autoComplete="off"
+                            onBlur={handleBlur}
+                            fullWidth
+                            size="small"
+                            onChange={(e) =>
+                              setFieldValue(
+                                "superAdminFirstName",
+                                e.target.value.replace(/^\s+/, ""),
+                              )
+                            }
+                          />
+                          {touched.superAdminFirstName &&
+                            errors.superAdminFirstName && (
+                              <Typography
+                                color="error"
+                                variant="caption"
+                                sx={{ fontFamily: "Poppins" }}
+                              >
+                                {errors.superAdminFirstName}
+                              </Typography>
+                            )}
+                        </Box>
 
-                      <Box>
-                        <label className="policy-form-label">
-                          Last Name<span className="required-icon">*</span>
-                        </label>
-                        <CustomTextField
-                          name="superAdminLastName"
-                          placeholder="Enter Last Name"
-                          value={values.superAdminLastName}
-                          autoComplete="off"
-                          onBlur={handleBlur}
-                          fullWidth
-                          size="small"
-                          onChange={(e) =>
-                            setFieldValue(
-                              "superAdminLastName",
-                              e.target.value.replace(/^\s+/, ""),
-                            )
-                          }
-                        />
-                        {touched.superAdminLastName &&
-                          errors.superAdminLastName && (
-                            <Typography
-                              color="error"
-                              variant="caption"
-                              sx={{ fontFamily: "Poppins" }}
-                            >
-                              {errors.superAdminLastName}
-                            </Typography>
-                          )}
+                        <Box>
+                          <label className="policy-form-label">
+                            Last Name<span className="required-icon">*</span>
+                          </label>
+                          <CustomTextField
+                            name="superAdminLastName"
+                            placeholder="Enter Last Name"
+                            value={values.superAdminLastName}
+                            autoComplete="off"
+                            onBlur={handleBlur}
+                            fullWidth
+                            size="small"
+                            onChange={(e) =>
+                              setFieldValue(
+                                "superAdminLastName",
+                                e.target.value.replace(/^\s+/, ""),
+                              )
+                            }
+                          />
+                          {touched.superAdminLastName &&
+                            errors.superAdminLastName && (
+                              <Typography
+                                color="error"
+                                variant="caption"
+                                sx={{ fontFamily: "Poppins" }}
+                              >
+                                {errors.superAdminLastName}
+                              </Typography>
+                            )}
+                        </Box>
                       </Box>
-                    </Box>
+                    )}
 
                     {/* Username */}
-                    <Box sx={{ mb: 2 }}>
-                      <label className="policy-form-label">
-                        Username<span className="required-icon">*</span>
-                      </label>
-                      <CustomTextField
-                        name="superAdminUsername"
-                        placeholder="Enter Username"
-                        value={values.superAdminUsername}
-                        autoComplete="off"
-                        onBlur={handleBlur}
-                        fullWidth
-                        size="small"
-                        onChange={(e) =>
-                          setFieldValue(
-                            "superAdminUsername",
-                            e.target.value.replace(/^\s+/, ""),
-                          )
-                        }
-                      />
-                      {touched.superAdminUsername &&
-                        errors.superAdminUsername && (
+                    {!isEdit && (
+                      <Box sx={{ mb: 2 }}>
+                        <label className="policy-form-label">
+                          Username<span className="required-icon">*</span>
+                        </label>
+                        <CustomTextField
+                          name="superAdminUsername"
+                          placeholder="Enter Username"
+                          value={values.superAdminUsername}
+                          autoComplete="off"
+                          onBlur={handleBlur}
+                          fullWidth
+                          size="small"
+                          onChange={(e) =>
+                            setFieldValue(
+                              "superAdminUsername",
+                              e.target.value.replace(/^\s+/, ""),
+                            )
+                          }
+                        />
+                        {touched.superAdminUsername &&
+                          errors.superAdminUsername && (
+                            <Typography
+                              color="error"
+                              variant="caption"
+                              sx={{ fontFamily: "Poppins" }}
+                            >
+                              {errors.superAdminUsername}
+                            </Typography>
+                          )}
+                      </Box>
+                    )}
+
+                    {/* Super Admin Email */}
+                    {!isEdit && (
+                      <Box sx={{ mb: 2 }}>
+                        <label className="policy-form-label">
+                          Super Admin Email
+                          <span className="required-icon">*</span>
+                        </label>
+                        <CustomTextField
+                          name="superAdminEmail"
+                          placeholder="Enter Super Admin Email"
+                          value={values.superAdminEmail}
+                          autoComplete="off"
+                          onBlur={handleBlur}
+                          fullWidth
+                          size="small"
+                          onChange={(e) =>
+                            setFieldValue(
+                              "superAdminEmail",
+                              e.target.value.replace(/^\s+/, ""),
+                            )
+                          }
+                        />
+                        {touched.superAdminEmail && errors.superAdminEmail && (
                           <Typography
                             color="error"
                             variant="caption"
                             sx={{ fontFamily: "Poppins" }}
                           >
-                            {errors.superAdminUsername}
+                            {errors.superAdminEmail}
                           </Typography>
                         )}
-                    </Box>
-
-                    {/* Super Admin Email */}
-                    <Box sx={{ mb: 2 }}>
-                      <label className="policy-form-label">
-                        Super Admin Email
-                        <span className="required-icon">*</span>
-                      </label>
-                      <CustomTextField
-                        name="superAdminEmail"
-                        placeholder="Enter Super Admin Email"
-                        value={values.superAdminEmail}
-                        autoComplete="off"
-                        onBlur={handleBlur}
-                        fullWidth
-                        size="small"
-                        onChange={(e) =>
-                          setFieldValue(
-                            "superAdminEmail",
-                            e.target.value.replace(/^\s+/, ""),
-                          )
-                        }
-                      />
-                      {touched.superAdminEmail && errors.superAdminEmail && (
-                        <Typography
-                          color="error"
-                          variant="caption"
-                          sx={{ fontFamily: "Poppins" }}
-                        >
-                          {errors.superAdminEmail}
-                        </Typography>
-                      )}
-                    </Box>
+                      </Box>
+                    )}
 
                     {/* Location */}
                     <Box sx={{ mb: 2 }}>
@@ -472,36 +500,38 @@ const AddOrganizationModal = ({
                     </Box>
 
                     {/* Subscribed Framework */}
-                    <Box sx={{ mb: 2 }}>
-                      <label className="policy-form-label">
-                        Subscribed Framework
-                        <span className="required-icon">*</span>
-                      </label>
-                      <AsyncSelect
-                        isMulti
-                        name="subscribeFramework"
-                        placeholder="Select Framework"
-                        styles={customStyles}
-                        defaultOptions={frameworks}
-                        value={values.subscribeFramework}
-                        onChange={(selectedOption) =>
-                          setFieldValue("subscribeFramework", selectedOption)
-                        }
-                        onBlur={() =>
-                          setFieldTouched("subscribeFramework", true)
-                        }
-                      />
-                      {touched.subscribeFramework &&
-                        errors.subscribeFramework && (
-                          <Typography
-                            color="error"
-                            variant="caption"
-                            sx={{ fontFamily: "Poppins" }}
-                          >
-                            {errors.subscribeFramework}
-                          </Typography>
-                        )}
-                    </Box>
+                    {!isEdit && (
+                      <Box sx={{ mb: 2 }}>
+                        <label className="policy-form-label">
+                          Subscribed Framework
+                          <span className="required-icon">*</span>
+                        </label>
+                        <AsyncSelect
+                          isMulti
+                          name="subscribeFramework"
+                          placeholder="Select Framework"
+                          styles={customStyles}
+                          defaultOptions={frameworks}
+                          value={values.subscribeFramework}
+                          onChange={(selectedOption) =>
+                            setFieldValue("subscribeFramework", selectedOption)
+                          }
+                          onBlur={() =>
+                            setFieldTouched("subscribeFramework", true)
+                          }
+                        />
+                        {touched.subscribeFramework &&
+                          errors.subscribeFramework && (
+                            <Typography
+                              color="error"
+                              variant="caption"
+                              sx={{ fontFamily: "Poppins" }}
+                            >
+                              {errors.subscribeFramework}
+                            </Typography>
+                          )}
+                      </Box>
+                    )}
 
                     {/* Onboarding Date */}
                     <Box sx={{ mb: 2 }}>
@@ -528,6 +558,9 @@ const AddOrganizationModal = ({
                               );
                             }
                           }}
+                          maxDate={
+                            values.expireDate ? dayjs(values?.expireDate) : null
+                          }
                           slotProps={{
                             textField: {
                               fullWidth: true,
@@ -588,6 +621,11 @@ const AddOrganizationModal = ({
                               );
                             }
                           }}
+                          minDate={
+                            values.onboardingDate
+                              ? dayjs(values?.onboardingDate)
+                              : null
+                          }
                           slotProps={{
                             textField: {
                               fullWidth: true,

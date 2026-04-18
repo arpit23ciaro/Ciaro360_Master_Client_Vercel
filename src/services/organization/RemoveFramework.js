@@ -1,17 +1,21 @@
+import axios from "axios";
+import { baseURL } from "../../utils/constants/constants";
 import { organizationEP } from "../../utils/config/config";
-import axiosInstance from "../../utils/axios config/axiosConfig";
 
-export const UpdateDataRetentionDate = async (id, retentionDate) => {
-  const body = {
-    dataDeletionDate: retentionDate,
-  };
-  const url = `${organizationEP}/${id}/offboard`;
+export const RemoveFramework = async (orgId, frameworkId) => {
   try {
-    const response = await axiosInstance.put(url, body, {
-      withCredentials: true,
+    const accessToken = localStorage.getItem("token");
+    const response = await axios({
+      method: "delete",
+      url: `${baseURL}${organizationEP}/${orgId}/removeFramework/${frameworkId}`,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
     if (response?.status === 200) {
-      return response?.data;
+      return response.data;
     }
   } catch (error) {
     if (error?.response && error?.response?.data) {

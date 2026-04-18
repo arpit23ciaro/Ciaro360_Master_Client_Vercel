@@ -10,6 +10,7 @@ import {
   Paper,
   Badge,
   Tooltip,
+  capitalize,
 } from "@mui/material";
 import React, { useState, useContext, useEffect } from "react";
 import logo from "../assest/logo.png";
@@ -30,6 +31,7 @@ export default function Header() {
   // setIsAdmin(JSON.parse(sessionStorage.getItem("isAdmin")));
   // setIsSA(JSON.parse(sessionStorage.getItem("isSA")));
   const [notificationData, setNotificationData] = useState([]);
+  const firstName = localStorage.getItem("firstName") || "User";
 
   const { resetUserContext } = useContext(UserContext);
 
@@ -68,6 +70,14 @@ export default function Header() {
         <Box className="header-box">
           <img src={logo} className="img-container" />
           <Box style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <Box className="user-greeting">
+              <Typography className="greeting-text">
+                Hello{" "}
+                <span className="greeting-name">
+                  {capitalize(firstName || "User")}
+                </span>
+              </Typography>
+            </Box>
             {/* <Tooltip title="Notification">
               <IconButton>
                 <img
@@ -202,5 +212,11 @@ const HeaderStyle = styled(Box)({
   "& .img-container": {
     objectFit: "cover",
     marginLeft: "2%",
+  },
+  "& .greeting-text": {
+    fontFamily: "Poppins",
+    // fontSize: "14px",
+    // fontWeight: 400,
+    // color: "#4B5563",
   },
 });

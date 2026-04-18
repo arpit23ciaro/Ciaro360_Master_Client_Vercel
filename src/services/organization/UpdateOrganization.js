@@ -4,15 +4,12 @@ import axiosInstance from "../../utils/axios config/axiosConfig";
 export const UpdateOrganization = async (id, data) => {
   const body = {
     organizationName: data?.organizationName,
-    saEmail: data?.superAdminEmail,
+
     location: data?.location,
     employeeSize: data?.employeeSize,
-    frameworksSubscribed: data?.subscribeFramework?.map((item) => item?.value),
+    // frameworksSubscribed: data?.subscribeFramework?.map((item) => item?.value),
     purchaseDate: data?.onboardingDate,
     expiryDate: data?.expireDate,
-    username: data?.superAdminUsername,
-    firstname: data?.superAdminFirstName,
-    lastname: data?.superAdminLastName,
   };
   const url = `${organizationEP}/${id}`;
   try {

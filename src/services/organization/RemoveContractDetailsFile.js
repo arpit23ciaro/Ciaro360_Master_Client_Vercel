@@ -2,12 +2,12 @@ import axios from "axios";
 import { baseURL } from "../../utils/constants/constants";
 import { organizationEP } from "../../utils/config/config";
 
-export const RemoveContractDetailsFile = async (orgId) => {
+export const RemoveContractDetailsFile = async (orgId, fileId) => {
   try {
     const accessToken = localStorage.getItem("token");
     const response = await axios({
       method: "delete",
-      url: `${baseURL}${organizationEP}/${orgId}/contractDetails`,
+      url: `${baseURL}${organizationEP}/${orgId}/contractDetails/${fileId}`,
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",

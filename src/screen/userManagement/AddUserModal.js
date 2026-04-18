@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -14,6 +14,7 @@ import {
   CustomeModal,
   colors,
   fontWeight,
+  CustomTextField,
 } from "../../Style/GlobalStyle";
 import Sheet from "@mui/joy/Sheet";
 import { Field, Form, Formik } from "formik";
@@ -23,107 +24,76 @@ import AsyncSelect from "react-select/async";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-// import { GetAllFrameworks } from "../../../services/governance services/policies services/GetAllFrameworks";
-// import { AddEvidenceRequirement } from "../../../services/complinces/evidences/AddEvidenceRequirement";
-// import { AllUserSearchAPI } from "../../../services/governance services/policies services/AllUserSearchAPI";
-// import { GetEvidenceCategoryList } from "../../../services/complinces/evidences/GetEvidenceCategoryList";
 import { useParams } from "react-router";
-// import toolTip from "../../../assest/dashborad-assest/info-button.svg";
 import UploadIcon from "../../assest/upload-icon.svg";
 import dayjs from "dayjs";
+import { AddUser } from "../../services/user/AddUser";
+import { UpdateUser } from "../../services/user/UpdateUser";
+import { GetUserRoleList } from "../../services/user/GetUserRoleList";
+import { useToast } from "../../context/ToastProvider";
 
-const AddUserModal = ({ open, onClose, refreshList, evidenceData = null }) => {
-  const [uplaodedFile, setUploadedFile] = useState(null);
+const AddUserModal = ({
+  open,
+  onClose,
+  refreshList,
+  data = null,
+  isEdit,
+  roleList,
+}) => {
+  const [btnLoading, setBtnLoading] = useState(false);
+  const [roleData, setRoleData] = useState([]);
+  const { showToast } = useToast();
   const validationSchema = Yup.object({
-    name: Yup.string().trim().required("User Name is required"),
+    firstName: Yup.string().trim().required("First Name is required"),
+    lastName: Yup.string().trim().required("Last Name is required"),
 
-    personalEmail: Yup.string()
+    email: Yup.string()
       .email("Invalid email format")
       .required("Personal Email is required"),
 
-    ciaroEmail: Yup.string()
-      .email("Invalid email format")
-      .required("CIARO Email is required"),
-
     role: Yup.object().nullable().required("User role is required"),
-
-    onboardingDate: Yup.date()
-      .typeError("Onboarding date is required")
-      .required("Onboarding date is required"),
   });
 
-  const trimEmail = (email) => {
-    if (!email) return "";
-    return email.split("@")[0];
+  useEffect(() => {
+    const data = roleList?.map((item) => ({
+      label: item?.name,
+      value: item?._id,
+    }));
+    setRoleData(data);
+  }, [roleList]);
+
+  const loadRole = async (inputValue) => {
+    try {
+      const res = await GetUserRoleList();
+      const roles = res?.data?.roles;
+      return roles?.map((fw) => ({
+        value: fw?._id,
+        label: fw?.name,
+      }));
+    } catch (error) {
+      console.error("Error fetching frameworks:", error);
+      return [];
+    }
   };
 
-  const loadCategoryOptions = async (inputValue) => {
-    // try {
-    //   const res = await GetEvidenceCategoryList(inputValue);
-    //   const categories = res?.data?.category;
-    //   return categories?.map((cat) => ({
-    //     value: cat?._id,
-    //     label: cat?.name,
-    //   }));
-    // } catch (error) {
-    //   console.error("Error fetching categories:", error);
-    //   return [];
-    // }
-  };
-  function handleFileUpload() {}
-
-  const loadFrameworkOptions = async (inputValue) => {
-    // try {
-    //   const res = await GetAllFrameworks(inputValue);
-    //   const frameworks = res?.data?.groups;
-    //   return frameworks?.map((fw) => ({
-    //     value: fw?._id,
-    //     label: fw?.name,
-    //   }));
-    // } catch (error) {
-    //   console.error("Error fetching frameworks:", error);
-    //   return [];
-    // }
-  };
-
-  const loadUserOptions = async (inputValue) => {
-    // if (!inputValue || inputValue.length < 3) {
-    //   return [];
-    // }
-    // try {
-    //   const response = await AllUserSearchAPI(inputValue);
-    //   const users = response?.data?.reviewer || [];
-    //   return users?.map((user) => ({
-    //     value: user?._id,
-    //     email: user?.fullName,
-    //     label: (
-    //       <Typography
-    //         sx={{ display: "flex", alignItems: "center", gap: "5px" }}
-    //       >
-    //         {user?.fullName}{" "}
-    //         <Typography sx={{ fontSize: "10px" }}>
-    //           ({trimEmail(user?.email)})
-    //         </Typography>
-    //       </Typography>
-    //     ),
-    //   }));
-    // } catch (error) {
-    //   console.error("Error fetching users:", error);
-    //   return [];
-    // }
-  };
-
-  const handleCreateEvidence = async (values) => {
-    // try {
-    //   const response =
-    //     evidenceData === null ? await AddEvidenceRequirement(values) : "";
-    //   if (response) {
-    //     refreshList();
-    //     onClose();
-    //   }
-    // } catch (error) {
-    //   console.error("Error creating evidence requirement:", error);
-    // }
+  const handleSubmit = async (values) => {
+    setBtnLoading(true);
+    try {
+      const response = isEdit
+        ? await UpdateUser(data?._id, values)
+        : await AddUser(values);
+      if (response?.status) {
+        showToast(response?.msg, "success");
+        refreshList();
+        onClose();
+      } else {
+        showToast(response?.error, "error");
+      }
+    } catch (error) {
+      console.error("Error creating evidence requirement:", error);
+    } finally {
+      setBtnLoading(false);
+    }
   };
   const customStyles = {
     control: (provided, state) => ({
@@ -146,23 +116,24 @@ const AddUserModal = ({ open, onClose, refreshList, evidenceData = null }) => {
       <Sheet variant="outlined" className="modal-container">
         <GlobleStyle>
           <Box className="modal-header">
-            <Typography className="create-modal-heading">Add User</Typography>
+            <Typography className="create-modal-heading">
+              {isEdit ? "Update User" : "Add User"}
+            </Typography>
             <IconButton onClick={onClose}>
               <CloseIcon />
             </IconButton>
           </Box>
-
           <Formik
             initialValues={{
-              // organization name, super admin email,location, emp size, subscribe framework,contract details, onboardig details
-              name: "",
-              ciaroEmail: "",
-              personalEmail: "",
-              onboardingDate: null,
-              role: null,
+              firstName: data?.firstname ? data?.firstname : "",
+              lastName: data?.lastname ? data?.lastname : "",
+              email: data?.email ? data?.email : "",
+              role: data?.role
+                ? { label: data?.role?.name, value: data?.role?._id }
+                : null,
             }}
             validationSchema={validationSchema}
-            onSubmit={handleCreateEvidence}
+            onSubmit={handleSubmit}
           >
             {({
               values,
@@ -171,6 +142,8 @@ const AddUserModal = ({ open, onClose, refreshList, evidenceData = null }) => {
               touched,
               handleChange,
               handleBlur,
+              isValid,
+              dirty,
             }) => (
               <Form
                 style={{
@@ -182,120 +155,96 @@ const AddUserModal = ({ open, onClose, refreshList, evidenceData = null }) => {
               >
                 {/*  Scrollable Body */}
                 <Box className="modal-body">
+                  {/* Email */}
                   <Box sx={{ mb: 2 }}>
                     <label className="policy-form-label">
-                      Full Name<span className="required-icon">*</span>
+                      Email<span className="required-icon">*</span>
                     </label>
-                    <Field
-                      name="name"
-                      placeholder="Enter User Name"
-                      className="modal-input"
-                      autoComplete="off"
+                    <CustomTextField
+                      name="email"
+                      placeholder="Enter email"
+                      value={values.email}
+                      onBlur={handleBlur}
+                      fullWidth
+                      size="small"
+                      onChange={(e) =>
+                        setFieldValue(
+                          "email",
+                          e.target.value.replace(/^\s+/, ""),
+                        )
+                      }
                     />
-                    {touched.name && errors.name && (
-                      <Typography
-                        color="error"
-                        variant="caption"
-                        sx={{ fontFamily: "Poppins" }}
-                      >
-                        {errors.name}
+                    {touched.email && errors.email && (
+                      <Typography color="error" variant="caption">
+                        {errors.email}
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* First Name */}
+                  <Box sx={{ mb: 2 }}>
+                    <label className="policy-form-label">
+                      First Name<span className="required-icon">*</span>
+                    </label>
+                    <CustomTextField
+                      name="firstName"
+                      placeholder="Enter first name"
+                      value={values.firstName}
+                      onBlur={handleBlur}
+                      fullWidth
+                      size="small"
+                      onChange={(e) =>
+                        setFieldValue(
+                          "firstName",
+                          e.target.value.replace(/^\s+/, ""),
+                        )
+                      }
+                    />
+                    {touched.firstName && errors.firstName && (
+                      <Typography color="error" variant="caption">
+                        {errors.firstName}
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* Last Name */}
+                  <Box sx={{ mb: 2 }}>
+                    <label className="policy-form-label">
+                      Last Name<span className="required-icon">*</span>
+                    </label>
+                    <CustomTextField
+                      name="lastName"
+                      placeholder="Enter last name"
+                      value={values.lastName}
+                      onBlur={handleBlur}
+                      fullWidth
+                      size="small"
+                      onChange={(e) =>
+                        setFieldValue(
+                          "lastName",
+                          e.target.value.replace(/^\s+/, ""),
+                        )
+                      }
+                    />
+                    {touched.lastName && errors.lastName && (
+                      <Typography color="error" variant="caption">
+                        {errors.lastName}
                       </Typography>
                     )}
                   </Box>
 
                   <Box sx={{ mb: 2 }}>
                     <label className="policy-form-label">
-                      Personal Email<span className="required-icon">*</span>
+                      Role<span className="required-icon">*</span>
                     </label>
-                    <Field
-                      name="personalEmail"
-                      placeholder="Enter Personal Email"
-                      className="modal-input"
-                      autoComplete="off"
-                    />
-                    {touched.personalEmail && errors.personalEmail && (
-                      <Typography
-                        color="error"
-                        variant="caption"
-                        sx={{ fontFamily: "Poppins" }}
-                      >
-                        {errors.personalEmail}
-                      </Typography>
-                    )}
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <label className="policy-form-label">CIARO Email</label>
-                    <Field
-                      name="ciaroEmail"
-                      placeholder="Enter CIARO Email"
-                      className="modal-input"
-                      autoComplete="off"
-                    />
-                    {touched.ciaroEmail && errors.ciaroEmail && (
-                      <Typography
-                        color="error"
-                        variant="caption"
-                        sx={{ fontFamily: "Poppins" }}
-                      >
-                        {errors.ciaroEmail}
-                      </Typography>
-                    )}
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <label className="policy-form-label">Onboarding Date</label>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <Box className="filter-date-box">
-                        <DatePicker
-                          value={
-                            values.onboardingDate
-                              ? dayjs(values.onboardingDate)
-                              : null
-                          }
-                          onChange={(date) =>
-                            setFieldValue(
-                              "onboardingDate",
-                              date ? date.toISOString() : null
-                            )
-                          }
-                          slotProps={{
-                            textField: {
-                              fullWidth: true,
-                              error:
-                                touched.onboardingDate &&
-                                !!errors.onboardingDate,
-                              helperText:
-                                touched.onboardingDate && errors.onboardingDate,
-                              sx: {
-                                "& .MuiInputBase-root": {
-                                  height: "36px", // Adjust height here
-                                },
-                                "& .MuiOutlinedInput-root": {
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: "black", // Focus border color
-                                    },
-                                },
-                                fontFamily: "Poppins",
-                              },
-                            },
-                          }}
-                          format="DD/MM/YYYY"
-                        />
-                      </Box>
-                    </LocalizationProvider>
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <label className="policy-form-label">Role</label>
                     <AsyncSelect
-                      isMulti
                       name="role"
                       placeholder="Select Role"
+                      menuPlacement="top"
                       styles={customStyles}
-                      loadOptions={loadFrameworkOptions}
-                      value={values.framework}
+                      defaultOptions={roleData}
+                      // loadOptions={loadRole}
+                      value={values.role}
                       onChange={(selectedOption) =>
                         setFieldValue("role", selectedOption)
                       }
@@ -316,8 +265,10 @@ const AddUserModal = ({ open, onClose, refreshList, evidenceData = null }) => {
                   <Button
                     type="submit"
                     className="policy-btn policy-submit-btn"
+                    disabled={btnLoading || !isValid || !dirty}
+                    loading={btnLoading}
                   >
-                    Add User
+                    {isEdit ? "Update User" : "Add User"}
                   </Button>
                 </Box>
               </Form>

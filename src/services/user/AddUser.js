@@ -1,16 +1,16 @@
-import { organizationEP } from "../../utils/config/config";
+import { userEP } from "../../utils/config/config";
 import axiosInstance from "../../utils/axios config/axiosConfig";
 
-export const CreateSuperAdminDetails = async (orgId, data) => {
+export const AddUser = async (data) => {
   const body = {
-    username: data?.username,
-    email: data?.email,
     firstname: data?.firstName,
     lastname: data?.lastName,
+    email: data?.email,
+    role: data?.role?.value,
   };
-  const url = `${organizationEP}/${orgId}/createSuperAdmin`;
+
   try {
-    const response = await axiosInstance.post(url, body, {
+    const response = await axiosInstance.post(userEP, body, {
       withCredentials: true,
     });
     if (response?.status === 200) {

@@ -36,7 +36,7 @@ import AddSuperAdminModal from "./AddSuperAdminModal";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "./ViewOrganization";
 
-const OrganizationManagement = () => {
+const OrganizationManagement = ({ hasFullAccess, canEdit }) => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -124,11 +124,8 @@ const OrganizationManagement = () => {
         return true;
       })();
 
-      const getItemStatus = (item) =>
-        item?.status === "offboarded" ? "Offboarded" : "Active";
-
       const statusMatch =
-        status?.length > 0 ? status.includes(getItemStatus(item)) : true;
+        status?.length > 0 ? status.includes(item?.status) : true;
 
       return dateMatch && statusMatch;
     });
@@ -444,15 +441,17 @@ const OrganizationManagement = () => {
             Organization Management
           </Typography>
 
-          <Button
-            className="create-policy"
-            onClick={() => setOrgModalOpen(true)}
-          >
-            <Box className="create-policy-label">
-              <img src={addPolicy} alt="icon" className="add-svg-icon" />
-              Add Organization
-            </Box>
-          </Button>
+          {(hasFullAccess || canEdit) && (
+            <Button
+              className="create-policy"
+              onClick={() => setOrgModalOpen(true)}
+            >
+              <Box className="create-policy-label">
+                <img src={addPolicy} alt="icon" className="add-svg-icon" />
+                Add Organization
+              </Box>
+            </Button>
+          )}
         </Box>
 
         {/* ── search + filter bar ── */}

@@ -1,11 +1,12 @@
 import { organizationEP } from "../../utils/config/config";
 import axiosInstance from "../../utils/axios config/axiosConfig";
 
-export const UpdateDataRetentionDate = async (id, retentionDate) => {
+export const AddFramework = async (orgId, data) => {
+  const url = `${organizationEP}/${orgId}/addFramework`;
   const body = {
-    dataDeletionDate: retentionDate,
+    frameworksSubscribed: data?.subscribeFramework?.map((item) => item?.value),
   };
-  const url = `${organizationEP}/${id}/offboard`;
+
   try {
     const response = await axiosInstance.put(url, body, {
       withCredentials: true,

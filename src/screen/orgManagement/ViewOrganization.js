@@ -6,29 +6,56 @@ import {
   Typography,
   CircularProgress,
   capitalize,
+  Menu,
+  MenuItem,
+  Collapse,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router";
 import { GetOrgDetails } from "../../services/organization/GetOrgDetails";
 import { OnBoardOrganization } from "../../services/organization/OnBoardOrganization";
+// import { ConfirmOffboardOrganization } from "../../services/organization/ConfirmOffboardOrganization"; // NEW IMPORT
 import { useToast } from "../../context/ToastProvider";
 import { DownloadContractDetails } from "../../services/organization/DownloadContractDetails";
 import AddOrganizationModal from "./AddOrganizationModal";
 import OffboardOrganizationModal from "./Offboardorganizationmodal ";
 import PageHeader from "../../component/PageHeader";
+import AddSuperAdminModal from "./AddSuperAdminModal";
+import UpdateFrameworksModal from "./UpdateFramework";
+import AlertBanner from "../../component/AlertBanner";
+import { RemoveFramework } from "../../services/organization/RemoveFramework";
+import DeleteModal from "../../component/DeleteModal";
+import { UpdateDataRetentionDate } from "../../services/organization/UpdateDataRetentionDate";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+dayjs.extend(customParseFormat);
 
 const POPPINS = "Poppins, sans-serif";
 
-const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
+const ViewOrganization = ({ hasFullAccess, canEdit }) => {
+  const { id } = useParams();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [btnLoading, setBtnLoading] = useState(false);
   const [orgDetails, setOrgDetails] = useState(null);
   const [statusChangeLoading, setStatusChangeLoading] = useState(false);
+  const [confirmOffboardLoading, setConfirmOffboardLoading] = useState(false); // NEW
   const [loading, setLoading] = useState(false);
   const [openEditOrgModal, setOpenEditOrgModal] = useState(false);
   const [offboardModalOpen, setOffboardModalOpen] = useState(false);
+  const [cofirmOffboardModalOpen, setConfirmOffboardModalOpen] =
+    useState(false);
 
-  const { id } = useParams();
+  const [openSAModal, setOpenSAModal] = useState(false);
+  const [openFrameworkModal, setOpenFrameworkModal] = useState(false);
+  const [openBanner, setOpenBanner] = useState(true);
+  const [showComment, setShowComment] = useState(false);
+  const [openDeleteFrameworkModal, setOpenDeleteFrameworkModal] =
+    useState(false);
+  const [selectedFramework, setSelectedFramework] = useState(null);
+
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const menuOpen = Boolean(menuAnchorEl);
 
   useEffect(() => {
     getOrgData();
@@ -38,7 +65,10 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
     setLoading(true);
     const result = await GetOrgDetails(id);
     if (result?.status) {
-      setOrgDetails(result?.data?.organization);
+      setOrgDetails({
+        ...result?.data?.organization,
+        // status: "Ready To OffBoard",
+      });
     }
     setLoading(false);
   };
@@ -67,6 +97,30 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
       showToast(response?.error, "error");
     }
     setStatusChangeLoading(false);
+  };
+
+  // NEW: Confirm Offboard handler — moves status from "Ready To OffBoard" → "OffBoarded"
+  const handleConfirmOffboard = async () => {
+    setConfirmOffboardLoading(true);
+
+    const retentionDate = orgDetails.dataDeletionDate
+      ? dayjs(orgDetails.dataDeletionDate, "DD-MM-YYYY")
+          .startOf("day")
+          .format("YYYY-MM-DDTHH:mm:ss.SSS")
+      : null;
+
+    const response = await UpdateDataRetentionDate(id, retentionDate);
+
+    if (response?.status) {
+      showToast(
+        response?.msg || "Organization offboarded successfully",
+        "success",
+      );
+    } else {
+      showToast(response?.error || "Failed to offboard organization", "error");
+    }
+    setConfirmOffboardLoading(false);
+    return response;
   };
 
   const handleEdit = () => {
@@ -109,7 +163,7 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
     }
   };
 
-  if (loading) {
+  if (!orgDetails?._id && loading) {
     return (
       <GlobleStyle>
         <Box
@@ -124,6 +178,43 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
     );
   }
 
+  const handleClose = () => {
+    setMenuAnchorEl(null);
+  };
+
+  const handleClick = (event) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleRemoveFramework = async () => {
+    setBtnLoading(true);
+    const response = await RemoveFramework(id, selectedFramework?._id);
+    if (response?.status) {
+      showToast(response?.msg, "success");
+    } else {
+      showToast(response?.error, "error");
+    }
+    setBtnLoading(false);
+    return response;
+  };
+
+  const sortedFrameworks = [...(orgDetails?.frameworks || [])].sort((a, b) => {
+    const aIsDefault =
+      a?.name?.toLowerCase().includes("organization identified controls") ||
+      a?.isDefault === true;
+
+    const bIsDefault =
+      b?.name?.toLowerCase().includes("organization identified controls") ||
+      b?.isDefault === true;
+
+    return Number(bIsDefault) - Number(aIsDefault);
+  });
+
+  // Derive readability flags
+  const isReadyToOffboard = orgDetails?.status === "Ready To OffBoard";
+  const isOffboarded = orgDetails?.status === "OffBoarded";
+  const isOffboardingInProgress = isReadyToOffboard || isOffboarded;
+
   return (
     <GlobleStyle>
       <Box className="parent-container">
@@ -131,6 +222,94 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
           crumbs={[{ label: "Back", path: "/org_management" }]}
           backTo="/org_management"
         />
+
+        {/* ── Alert Banner for offboarding statuses ── */}
+        {isReadyToOffboard && (hasFullAccess || canEdit) && (
+          <AlertBanner
+            color="warning"
+            open={openBanner}
+            msg={
+              <>
+                {`This organization is currently in offboarding. Access will be removed on ${orgDetails?.offboardingDate || "N/A"}, and all retained data will be permanently deleted on ${orgDetails?.dataDeletionDate || "N/A"}.`}
+                <Button
+                  size="small"
+                  onClick={() => setShowComment((prev) => !prev)}
+                  style={{
+                    color: "black",
+                    fontWeight: fontWeight.medium,
+                    fontSize: fontSize.h7,
+                    textDecoration: "underLine",
+                  }}
+                >
+                  {showComment ? "Hide Reason" : "View Reason"}
+                </Button>
+              </>
+            }
+            isShowOnlyMsg={true}
+            isReviewNPublish={true}
+            btnName="Update Offboarding Details"
+            onClose={() => {
+              setOpenBanner(false);
+              setShowComment(false);
+            }}
+            // Opens modal in retention-date-only edit mode
+            onReviewModalOpen={() => {
+              setOffboardModalOpen(true);
+            }}
+          />
+        )}
+
+        {isOffboarded && (hasFullAccess || canEdit) && (
+          <AlertBanner
+            color="warning"
+            open={openBanner}
+            msg={
+              <>
+                {`This organization is currently in offboarding. Access will be removed on ${orgDetails?.offboardingDate || "N/A"}, and all retained data will be permanently deleted on ${orgDetails?.dataDeletionDate || "N/A"}.`}
+                <Button
+                  size="small"
+                  onClick={() => setShowComment((prev) => !prev)}
+                  style={{
+                    color: "black",
+                    fontWeight: fontWeight.medium,
+                    fontSize: fontSize.h7,
+                    textDecoration: "underLine",
+                  }}
+                >
+                  {showComment ? "Hide Reason" : "View Reason"}
+                </Button>
+              </>
+            }
+            isShowOnlyMsg={true}
+            isReviewNPublish={true}
+            btnName="Update Data Retenction Date"
+            onClose={() => {
+              setOpenBanner(false);
+              setShowComment(false);
+            }}
+            // Opens modal in retention-date-only edit mode
+            onReviewModalOpen={() => {
+              setOffboardModalOpen(true);
+            }}
+          />
+        )}
+
+        <Collapse in={showComment}>
+          <Box
+            sx={{
+              padding: "2%",
+              background: "#f9f9f9",
+              padding: "8px",
+              borderRadius: "4px",
+              marginBottom: "2%",
+            }}
+          >
+            <Typography variant="body2" sx={{ fontFamily: "Poppins" }}>
+              {orgDetails?.offboardingReason || "No reason found"}
+            </Typography>
+          </Box>
+        </Collapse>
+
         <Box className="parent-container-box" sx={{ fontFamily: POPPINS }}>
           {/* ── Top Bar ── */}
           <Box
@@ -155,57 +334,120 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
             </Box>
 
             <Box sx={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              {(hasFullAccess || canEdit) && (
-                <Button
-                  onClick={handleEdit}
-                  sx={{
-                    fontFamily: POPPINS,
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    textTransform: "none",
-                    px: "16px",
-                    py: "7px",
-                    borderRadius: "8px",
-                    border: "1px solid #d0d0d0",
-                    color: "#444",
-                    background: "#fff",
-                    "&:hover": { background: "#f7f7f7" },
-                  }}
-                >
-                  ✎ &nbsp;Edit
-                </Button>
+              {/* ── Edit button: hidden once offboarding starts ── */}
+              {!isOffboardingInProgress && (hasFullAccess || canEdit) && (
+                <>
+                  <Button
+                    onClick={handleClick}
+                    sx={{
+                      fontFamily: POPPINS,
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      textTransform: "none",
+                      px: "16px",
+                      py: "7px",
+                      borderRadius: "8px",
+                      border: "1px solid #d0d0d0",
+                      color: "#444",
+                      background: "#fff",
+                      "&:hover": { background: "#f7f7f7" },
+                    }}
+                  >
+                    ✎ &nbsp;Edit
+                  </Button>
+                  <Menu
+                    id="menu-options"
+                    anchorEl={menuAnchorEl}
+                    open={menuOpen}
+                    onClose={() => handleClose(null)}
+                    MenuListProps={{ "aria-labelledby": "menu-button" }}
+                  >
+                    <Box className="custom-menu-box">
+                      <MenuItem
+                        onClick={() => {
+                          handleClose(null);
+                          handleEdit();
+                        }}
+                        sx={{ fontFamily: "Poppins", fontSize: "14px" }}
+                      >
+                        Update Org Details
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          handleClose(null);
+                          setOpenSAModal(true);
+                        }}
+                        sx={{ fontFamily: "Poppins", fontSize: "14px" }}
+                      >
+                        Update Super Admin
+                      </MenuItem>
+                    </Box>
+                  </Menu>
+                </>
               )}
-              {hasFullAccess && orgDetails?.status !== "OnBoarded" && (
+
+              {/* ── Activate button: only for non-OnBoarded, non-offboarding statuses ── */}
+              {!isOffboardingInProgress &&
+                hasFullAccess &&
+                orgDetails?.status !== "OnBoarded" && (
+                  <Button
+                    onClick={handleStatusChange}
+                    disabled={statusChangeLoading}
+                    sx={{
+                      fontFamily: POPPINS,
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      textTransform: "none",
+                      px: "16px",
+                      py: "7px",
+                      borderRadius: "8px",
+                      color: "#fff",
+                      background: isActive ? "#e24b4a" : "#1d9e75",
+                      "&:hover": {
+                        background: isActive ? "#c43b3a" : "#0f6e56",
+                      },
+                      "&.Mui-disabled": { opacity: 0.6 },
+                      minWidth: "100px",
+                    }}
+                  >
+                    {statusChangeLoading ? (
+                      <CircularProgress size={14} sx={{ color: "#fff" }} />
+                    ) : (
+                      "Activate"
+                    )}
+                  </Button>
+                )}
+
+              {/* ── Offboard button: only when OnBoarded ── */}
+              {!isOffboardingInProgress &&
+                hasFullAccess &&
+                orgDetails?.status === "OnBoarded" && (
+                  <Button
+                    onClick={() => setOffboardModalOpen(true)}
+                    sx={{
+                      fontFamily: POPPINS,
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      textTransform: "none",
+                      px: "16px",
+                      py: "7px",
+                      borderRadius: "8px",
+                      color: "#fff",
+                      background: "#e24b4a",
+                      "&:hover": { background: "#c43b3a" },
+                      "&.Mui-disabled": { opacity: 0.6 },
+                      minWidth: "100px",
+                    }}
+                  >
+                    Initiate Offboarding
+                  </Button>
+                )}
+
+              {/* ── NEW: Confirm Offboard button — appears when status is "Ready To OffBoard" ── */}
+              {isReadyToOffboard && hasFullAccess && (
                 <Button
-                  onClick={handleStatusChange}
-                  disabled={statusChangeLoading}
-                  sx={{
-                    fontFamily: POPPINS,
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    textTransform: "none",
-                    px: "16px",
-                    py: "7px",
-                    borderRadius: "8px",
-                    color: "#fff",
-                    background: isActive ? "#e24b4a" : "#1d9e75",
-                    "&:hover": { background: isActive ? "#c43b3a" : "#0f6e56" },
-                    "&.Mui-disabled": { opacity: 0.6 },
-                    minWidth: "100px",
-                  }}
-                >
-                  {statusChangeLoading ? (
-                    <CircularProgress size={14} sx={{ color: "#fff" }} />
-                  ) : isActive ? (
-                    "Offboard"
-                  ) : (
-                    "Activate"
-                  )}
-                </Button>
-              )}
-              {hasFullAccess && orgDetails?.status === "OnBoarded" && (
-                <Button
-                  onClick={() => setOffboardModalOpen(true)}
+                  onClick={() => setConfirmOffboardModalOpen(true)}
+                  disabled={confirmOffboardLoading}
                   sx={{
                     fontFamily: POPPINS,
                     fontSize: "13px",
@@ -218,10 +460,14 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
                     background: "#e24b4a",
                     "&:hover": { background: "#c43b3a" },
                     "&.Mui-disabled": { opacity: 0.6 },
-                    minWidth: "100px",
+                    minWidth: "140px",
                   }}
                 >
-                  Offboard
+                  {confirmOffboardLoading ? (
+                    <CircularProgress size={14} sx={{ color: "#fff" }} />
+                  ) : (
+                    "Confirm Offboard"
+                  )}
                 </Button>
               )}
             </Box>
@@ -257,34 +503,41 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
                   label="Status"
                   value={<StatusBadge status={orgDetails?.status} />}
                 />
-              </SectionCard>
-
-              {/* Subscriptions */}
-              <SectionCard title="Subscriptions">
                 <FieldRow
-                  label="Frameworks"
+                  label="Onboarding Date"
+                  value={orgDetails?.purchaseDate}
+                />
+                <FieldRow
+                  label="Annual Review Date"
+                  value={orgDetails?.expiryDate}
+                />
+                <FieldRow
+                  label="Contract File"
                   value={
-                    orgDetails?.frameworks?.length > 0 ? (
-                      <Box
-                        sx={{ display: "flex", flexWrap: "wrap", gap: "6px" }}
-                      >
-                        {orgDetails.frameworks.map((fw, i) => (
-                          <Box
-                            key={i}
+                    orgDetails?.contractDetails?.length > 0
+                      ? orgDetails?.contractDetails?.map((item, index) => (
+                          <Typography
+                            key={index}
+                            component="a"
+                            href={orgDetails.contractFile}
+                            target="_blank"
+                            rel="noreferrer"
                             sx={{
-                              fontSize: "16px",
-                              fontWeight: 500,
                               fontFamily: POPPINS,
+                              fontSize: "16px",
+                              color: "#1d9e75",
+                              textDecoration: "none",
+                              cursor: "pointer",
+                              "&:hover": { textDecoration: "underline" },
                             }}
+                            onClick={() => downloadFile(id, item?._id)}
                           >
-                            {fw?.name}
-                            {orgDetails.frameworks?.length - 1 !== i && ", "}
-                          </Box>
-                        ))}
-                      </Box>
-                    ) : (
-                      "N/A"
-                    )
+                            {item?.name || "View File"}
+                            {orgDetails?.contractDetails?.length - 1 !==
+                              index && " ,  "}
+                          </Typography>
+                        ))
+                      : "N/A"
                   }
                 />
               </SectionCard>
@@ -369,49 +622,255 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
                 />
               </SectionCard>
 
-              {/* Dates & Contract */}
-              <SectionCard title="Dates & Contract">
-                <FieldRow
-                  label="Onboarding Date"
-                  value={orgDetails?.purchaseDate}
-                />
-                <FieldRow
-                  label="Annual Review Date"
-                  value={orgDetails?.expiryDate}
-                />
-                <FieldRow
-                  label="Contract File"
-                  value={
-                    orgDetails?.contractDetails?.length > 0
-                      ? orgDetails?.contractDetails?.map((item, index) => (
-                          <Typography
-                            component="a"
-                            href={orgDetails.contractFile}
-                            target="_blank"
-                            rel="noreferrer"
+              {/* Subscriptions */}
+              <SectionCard title="Subscriptions">
+                <Box
+                  sx={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                >
+                  {/* Header row with Add button */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      mb: "4px",
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontFamily: POPPINS,
+                        fontSize: "13px",
+                        color: "#999",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Frameworks
+                    </Typography>
+                    {!isOffboardingInProgress && (hasFullAccess || canEdit) && (
+                      <Button
+                        onClick={() => setOpenFrameworkModal(true)}
+                        startIcon={
+                          <span style={{ fontSize: "16px", lineHeight: 1 }}>
+                            +
+                          </span>
+                        }
+                        sx={{
+                          fontFamily: POPPINS,
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          textTransform: "none",
+                          px: "12px",
+                          py: "4px",
+                          borderRadius: "8px",
+                          border: "1.5px solid #1d9e75",
+                          color: "#1d9e75",
+                          "&:hover": {
+                            borderStyle: "solid",
+                          },
+                        }}
+                      >
+                        Add Framework
+                      </Button>
+                    )}
+                  </Box>
+
+                  {/* Framework list */}
+                  {sortedFrameworks?.length > 0 ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      {sortedFrameworks?.map((fw, i) => {
+                        const isDefaultFree =
+                          fw?.name
+                            ?.toLowerCase()
+                            .includes("organization identified controls") ||
+                          fw?.isDefault === true;
+
+                        return (
+                          <Box
+                            key={i}
                             sx={{
-                              fontFamily: POPPINS,
-                              fontSize: "16px",
-                              color: "#1d9e75",
-                              textDecoration: "none",
-                              cursor: "pointer",
-                              "&:hover": { textDecoration: "underline" },
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              px: "12px",
+                              py: "8px",
+                              borderRadius: "8px",
+                              border: isDefaultFree
+                                ? "1px solid #c8f0e0"
+                                : "1px solid #ebebeb",
+                              background: isDefaultFree ? "#f0fdf8" : "#fafafa",
                             }}
-                            onClick={() => downloadFile(id, item?._id)}
                           >
-                            {item?.name || "View File"}
-                            {orgDetails?.contractDetails?.length - 1 !==
-                              index && " ,  "}
-                          </Typography>
-                        ))
-                      : "N/A"
-                  }
-                />
+                            {/* Left: icon + name + badge */}
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: "6px",
+                                  background: isDefaultFree
+                                    ? "#1d9e75"
+                                    : "#e8e8e8",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Typography
+                                  sx={{
+                                    fontSize: "13px",
+                                    color: isDefaultFree ? "#fff" : "#666",
+                                    fontWeight: 700,
+                                    fontFamily: POPPINS,
+                                  }}
+                                >
+                                  {fw?.name?.[0]?.toUpperCase() || "F"}
+                                </Typography>
+                              </Box>
+                              <Box>
+                                <Typography
+                                  sx={{
+                                    fontFamily: POPPINS,
+                                    fontSize: "13px",
+                                    fontWeight: 600,
+                                    color: "#1a1a2e",
+                                    lineHeight: 1.3,
+                                  }}
+                                >
+                                  {fw?.name}
+                                </Typography>
+                                {isDefaultFree && (
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      mt: "2px",
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        px: "6px",
+                                        py: "1px",
+                                        borderRadius: "20px",
+                                        background: "#e1f5ee",
+                                        border: "1px solid #a7e5cc",
+                                      }}
+                                    >
+                                      <Typography
+                                        sx={{
+                                          fontFamily: POPPINS,
+                                          fontSize: "10px",
+                                          fontWeight: 700,
+                                          color: "#0f6e56",
+                                          textTransform: "uppercase",
+                                          letterSpacing: "0.05em",
+                                        }}
+                                      >
+                                        ✦ Complimentary
+                                      </Typography>
+                                    </Box>
+                                    <Box
+                                      sx={{
+                                        px: "6px",
+                                        py: "1px",
+                                        borderRadius: "20px",
+                                        background: "#e3f2fd",
+                                        border: "1px solid #bbdefb",
+                                      }}
+                                    >
+                                      <Typography
+                                        sx={{
+                                          fontFamily: POPPINS,
+                                          fontSize: "10px",
+                                          fontWeight: 700,
+                                          color: "#1565c0",
+                                          textTransform: "uppercase",
+                                          letterSpacing: "0.05em",
+                                        }}
+                                      >
+                                        Free
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Box>
+
+                            {/* Right: Remove button (hidden for default/free frameworks and offboarding orgs) */}
+                            {!isDefaultFree &&
+                              !isOffboardingInProgress &&
+                              (hasFullAccess || canEdit) && (
+                                <Button
+                                  onClick={() => {
+                                    setSelectedFramework(fw);
+                                    setOpenDeleteFrameworkModal(true);
+                                  }}
+                                  sx={{
+                                    fontFamily: POPPINS,
+                                    fontSize: "11px",
+                                    fontWeight: 500,
+                                    textTransform: "none",
+                                    px: "10px",
+                                    py: "3px",
+                                    minWidth: "auto",
+                                    borderRadius: "6px",
+                                    border: "1px solid #fcc",
+                                    color: "#e24b4a",
+                                    background: "#fff5f5",
+                                    "&:hover": {
+                                      background: "#ffeaea",
+                                      borderColor: "#e24b4a",
+                                    },
+                                  }}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        textAlign: "center",
+                        py: "20px",
+                        borderRadius: "8px",
+                        border: "1px dashed #e0e0e0",
+                        background: "#fafafa",
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontFamily: POPPINS,
+                          fontSize: "13px",
+                          color: "#bbb",
+                        }}
+                      >
+                        No frameworks assigned yet
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
               </SectionCard>
             </Box>
           </Box>
         </Box>
 
+        {/* ── Modals ── */}
         {openEditOrgModal && (
           <AddOrganizationModal
             open={openEditOrgModal}
@@ -430,8 +889,56 @@ const ViewOrganization = ({ hasFullAccess = true, canEdit = true }) => {
             }}
             refreshList={getOrgData}
             organizationData={orgDetails}
+            // isOffboarded=true locks the offboard date + reason fields,
+            // leaving only the retention date editable.
+            // This applies for both "Ready To OffBoard" and "OffBoarded" statuses.
+            isOffboarded={isOffboarded}
           />
         )}
+
+        {openSAModal && (
+          <AddSuperAdminModal
+            open={openSAModal}
+            onClose={() => setOpenSAModal(false)}
+            data={orgDetails}
+            refreshList={getOrgData}
+          />
+        )}
+
+        {openFrameworkModal && (
+          <UpdateFrameworksModal
+            open={openFrameworkModal}
+            onClose={() => setOpenFrameworkModal(false)}
+            refreshList={getOrgData}
+            data={orgDetails?.frameworks || []}
+          />
+        )}
+
+        {openDeleteFrameworkModal ? (
+          <DeleteModal
+            open={openDeleteFrameworkModal}
+            onClose={() => setOpenDeleteFrameworkModal(false)}
+            onDelete={handleRemoveFramework}
+            refreshList={getOrgData}
+            loading={btnLoading}
+            message="Are you sure you want to remove this framework?"
+            btnDisable={btnLoading}
+            btnName="Remove"
+          />
+        ) : null}
+
+        {cofirmOffboardModalOpen ? (
+          <DeleteModal
+            open={cofirmOffboardModalOpen}
+            onClose={() => setConfirmOffboardModalOpen(false)}
+            onDelete={handleConfirmOffboard}
+            refreshList={getOrgData}
+            loading={confirmOffboardLoading}
+            message="Are you sure you want to offboard this organization?"
+            btnDisable={btnLoading}
+            btnName="Offboard"
+          />
+        ) : null}
       </Box>
     </GlobleStyle>
   );

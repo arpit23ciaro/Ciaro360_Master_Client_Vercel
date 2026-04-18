@@ -1,11 +1,14 @@
-import { organizationEP } from "../../utils/config/config";
+import { userEP } from "../../utils/config/config";
 import axiosInstance from "../../utils/axios config/axiosConfig";
 
-export const UpdateDataRetentionDate = async (id, retentionDate) => {
+export const UpdateUser = async (id, data) => {
   const body = {
-    dataDeletionDate: retentionDate,
+    firstname: data?.firstName,
+    lastname: data?.lastName,
+    email: data?.email,
+    role: data?.role?.value,
   };
-  const url = `${organizationEP}/${id}/offboard`;
+  const url = `${userEP}/${id}`;
   try {
     const response = await axiosInstance.put(url, body, {
       withCredentials: true,

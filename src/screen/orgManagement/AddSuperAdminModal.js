@@ -13,10 +13,12 @@ import * as Yup from "yup";
 import CloseIcon from "@mui/icons-material/Close";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
 import { useToast } from "../../context/ToastProvider";
-import { CreateSuperAdminDetails } from "../../services/organization/CreateSuperAdminDetails";
+import { UpdateSuperAdminDetails } from "../../services/organization/UpdateSuperAdminDetails";
+import { useParams } from "react-router-dom";
 // import { AddSuperAdmin } from "../../services/organization/AddSuperAdmin";
 
-const AddSuperAdminModal = ({ open, onClose, organizationId, refreshList }) => {
+const AddSuperAdminModal = ({ open, onClose, data, refreshList }) => {
+  const { id } = useParams();
   const { showToast } = useToast();
   const [btnLoading, setBtnLoading] = useState(false);
 
@@ -34,7 +36,7 @@ const AddSuperAdminModal = ({ open, onClose, organizationId, refreshList }) => {
     try {
       setBtnLoading(true);
 
-      const response = await CreateSuperAdminDetails(organizationId, values);
+      const response = await UpdateSuperAdminDetails(id, values);
       if (response?.status) {
         showToast("Super admin added successfully", "success");
         refreshList?.();
@@ -61,7 +63,7 @@ const AddSuperAdminModal = ({ open, onClose, organizationId, refreshList }) => {
           <Box className="modal-header">
             <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Typography className="create-modal-heading">
-                Create Super Admin
+                Update Super Admin
               </Typography>
             </Box>
 
@@ -73,10 +75,10 @@ const AddSuperAdminModal = ({ open, onClose, organizationId, refreshList }) => {
           {/* ── Form ── */}
           <Formik
             initialValues={{
-              username: "",
-              email: "",
-              firstName: "",
-              lastName: "",
+              username: data?.username ? data?.username : "",
+              email: data?.saEmail ? data?.saEmail : "",
+              firstName: data?.firstname ? data?.firstname : "",
+              lastName: data?.lastname ? data?.lastname : "",
             }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
@@ -205,7 +207,7 @@ const AddSuperAdminModal = ({ open, onClose, organizationId, refreshList }) => {
                     className="policy-btn policy-submit-btn"
                     loading={btnLoading}
                   >
-                    Create
+                    Update
                   </Button>
                 </Box>
               </Form>

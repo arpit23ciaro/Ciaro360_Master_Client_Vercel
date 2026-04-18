@@ -1,6 +1,8 @@
-export const baseURL = "http://192.168.0.236:4000";
-// export const baseURL =
-//   "https://server-code-git-main-vishaljadons-projects.vercel.app";
+// export const baseURL = "http://192.168.0.236:4000";
+// export const baseURL = process.env.REACT_APP_API_BASE_URL_LOCAL;
+// export const baseURL = process.env.REACT_APP_API_BASE_URL_SERVER;
+// export const baseURL = "https://r43lnp96-4444.inc1.devtunnels.ms/";
+export const baseURL = process.env.REACT_APP_API_BASE_URL_AZURE;
 
 export const RegExp =
   /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>]).*$/;
