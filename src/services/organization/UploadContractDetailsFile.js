@@ -6,7 +6,7 @@ export const UploadContractDetailsFile = async (orgId, files) => {
   const url = `${organizationEP}/${orgId}/contractDetails`;
   const formData = new FormData();
 
-  files.map((file, index) => {
+  files?.forEach((file, index) => {
     formData.append(`files`, file);
   });
   const accessToken = localStorage.getItem("token");
@@ -23,6 +23,7 @@ export const UploadContractDetailsFile = async (orgId, files) => {
     if (response?.status === 200) {
       return response?.data;
     }
+
   } catch (error) {
     if (error?.response && error?.response?.data) {
       const statusCode = error?.response?.status;
