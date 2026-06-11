@@ -39,7 +39,7 @@ const ViewOrganization = ({ hasFullAccess, canEdit }) => {
   const [btnLoading, setBtnLoading] = useState(false);
   const [orgDetails, setOrgDetails] = useState(null);
   const [statusChangeLoading, setStatusChangeLoading] = useState(false);
-  const [confirmOffboardLoading, setConfirmOffboardLoading] = useState(false); // NEW
+  const [confirmOffboardLoading, setConfirmOffboardLoading] = useState(false); 
   const [loading, setLoading] = useState(false);
   const [openEditOrgModal, setOpenEditOrgModal] = useState(false);
   const [offboardModalOpen, setOffboardModalOpen] = useState(false);
