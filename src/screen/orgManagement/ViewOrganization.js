@@ -379,7 +379,7 @@ const ViewOrganization = ({ hasFullAccess, canEdit }) => {
                         }}
                         sx={{ fontFamily: "Poppins", fontSize: "14px" }}
                       >
-                        Update Super Admin
+                        Update Admin
                       </MenuItem>
                     </Box>
                   </Menu>
@@ -546,7 +546,7 @@ const ViewOrganization = ({ hasFullAccess, canEdit }) => {
             {/* ── RIGHT COLUMN ── */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               {/* Super Admin */}
-              <SectionCard title="Super Admin Details">
+              <SectionCard title="Admin Details">
                 {/* Avatar + name header */}
                 <Box
                   sx={{
@@ -600,26 +600,12 @@ const ViewOrganization = ({ hasFullAccess, canEdit }) => {
                         mt: "2px",
                       }}
                     >
-                      Super Admin
+                      Admin
                     </Typography>
                   </Box>
                 </Box>
 
                 <FieldRow label="Email" value={orgDetails?.saEmail} />
-                <FieldRow
-                  label="Username"
-                  value={
-                    <Typography
-                      sx={{
-                        fontFamily: "monospace",
-                        fontSize: "16px",
-                        color: "#1a1a2e",
-                      }}
-                    >
-                      {orgDetails?.username || "N/A"}
-                    </Typography>
-                  }
-                />
               </SectionCard>
 
               {/* Subscriptions */}

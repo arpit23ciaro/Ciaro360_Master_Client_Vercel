@@ -80,11 +80,9 @@ const AddOrganizationModal = ({
 
     superAdminLastName: Yup.string().trim().required("Last Name is required"),
 
-    superAdminUsername: Yup.string().trim().required("Username is required"),
-
     superAdminEmail: Yup.string()
       .email("Invalid email format")
-      .required("Super Admin Email is required"),
+      .required("Admin Email is required"),
 
     employeeSize: Yup.number()
       .typeError("Employee size must be a number")
@@ -214,7 +212,6 @@ const AddOrganizationModal = ({
                 organizationName: data?.organizationName ?? "",
                 superAdminFirstName: data?.firstname ?? "",
                 superAdminLastName: data?.lastname ?? "",
-                superAdminUsername: data?.username ?? "",
                 superAdminEmail: data?.saEmail ?? "",
                 location: data?.location ?? "",
                 employeeSize:
@@ -364,50 +361,16 @@ const AddOrganizationModal = ({
                       </Box>
                     )}
 
-                    {/* Username */}
-                    {!isEdit && (
-                      <Box sx={{ mb: 2 }}>
-                        <label className="policy-form-label">
-                          Username<span className="required-icon">*</span>
-                        </label>
-                        <CustomTextField
-                          name="superAdminUsername"
-                          placeholder="Enter Username"
-                          value={values.superAdminUsername}
-                          autoComplete="off"
-                          onBlur={handleBlur}
-                          fullWidth
-                          size="small"
-                          onChange={(e) =>
-                            setFieldValue(
-                              "superAdminUsername",
-                              e.target.value.replace(/^\s+/, ""),
-                            )
-                          }
-                        />
-                        {touched.superAdminUsername &&
-                          errors.superAdminUsername && (
-                            <Typography
-                              color="error"
-                              variant="caption"
-                              sx={{ fontFamily: "Poppins" }}
-                            >
-                              {errors.superAdminUsername}
-                            </Typography>
-                          )}
-                      </Box>
-                    )}
-
                     {/* Super Admin Email */}
                     {!isEdit && (
                       <Box sx={{ mb: 2 }}>
                         <label className="policy-form-label">
-                          Super Admin Email
+                          Admin Email
                           <span className="required-icon">*</span>
                         </label>
                         <CustomTextField
                           name="superAdminEmail"
-                          placeholder="Enter Super Admin Email"
+                          placeholder="Enter Admin Email"
                           value={values.superAdminEmail}
                           autoComplete="off"
                           onBlur={handleBlur}
@@ -420,7 +383,7 @@ const AddOrganizationModal = ({
                             )
                           }
                         />
-                        {touched.superAdminEmail && errors.superAdminEmail && (
+                        {touched.superAdminEmail && errors.superAdmbinEmail && (
                           <Typography
                             color="error"
                             variant="caption"

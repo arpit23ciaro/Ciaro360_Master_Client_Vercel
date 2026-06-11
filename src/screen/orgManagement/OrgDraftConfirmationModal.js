@@ -120,8 +120,8 @@ const OrgDraftConfirmationModal = ({
                 lineHeight: 1.5,
               }}
             >
-              Add a super admin to activate this organization. Once added,
-              status will change to{" "}
+              Add a admin to activate this organization. Once added, status will
+              change to{" "}
               <Box component="span" sx={{ fontWeight: 600 }}>
                 Active
               </Box>{" "}
@@ -175,7 +175,7 @@ const OrgDraftConfirmationModal = ({
               },
             }}
           >
-            Add Super Admin
+            Add Admin
           </Button>
         </Box>
       </DialogContent>

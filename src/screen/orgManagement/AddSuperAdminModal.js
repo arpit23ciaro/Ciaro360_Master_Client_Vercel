@@ -24,7 +24,6 @@ const AddSuperAdminModal = ({ open, onClose, data, refreshList }) => {
 
   // ✅ Validation
   const validationSchema = Yup.object({
-    username: Yup.string().trim().required("Username is required"),
     email: Yup.string()
       .email("Invalid email format")
       .required("Email is required"),
@@ -38,7 +37,7 @@ const AddSuperAdminModal = ({ open, onClose, data, refreshList }) => {
 
       const response = await UpdateSuperAdminDetails(id, values);
       if (response?.status) {
-        showToast("Super admin added successfully", "success");
+        showToast(" Admin added successfully", "success");
         refreshList?.();
         onClose();
       }
@@ -63,7 +62,7 @@ const AddSuperAdminModal = ({ open, onClose, data, refreshList }) => {
           <Box className="modal-header">
             <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Typography className="create-modal-heading">
-                Update Super Admin
+                Update Admin
               </Typography>
             </Box>
 
@@ -75,7 +74,6 @@ const AddSuperAdminModal = ({ open, onClose, data, refreshList }) => {
           {/* ── Form ── */}
           <Formik
             initialValues={{
-              username: data?.username ? data?.username : "",
               email: data?.saEmail ? data?.saEmail : "",
               firstName: data?.firstname ? data?.firstname : "",
               lastName: data?.lastname ? data?.lastname : "",
@@ -94,32 +92,6 @@ const AddSuperAdminModal = ({ open, onClose, data, refreshList }) => {
             }) => (
               <Form>
                 <Box className="modal-body">
-                  {/* Username */}
-                  <Box sx={{ mb: 2 }}>
-                    <label className="policy-form-label">
-                      Username<span className="required-icon">*</span>
-                    </label>
-                    <CustomTextField
-                      name="username"
-                      placeholder="Enter username"
-                      value={values.username}
-                      onBlur={handleBlur}
-                      fullWidth
-                      size="small"
-                      onChange={(e) =>
-                        setFieldValue(
-                          "username",
-                          e.target.value.replace(/^\s+/, ""),
-                        )
-                      }
-                    />
-                    {touched.username && errors.username && (
-                      <Typography color="error" variant="caption">
-                        {errors.username}
-                      </Typography>
-                    )}
-                  </Box>
-
                   {/* Email */}
                   <Box sx={{ mb: 2 }}>
                     <label className="policy-form-label">

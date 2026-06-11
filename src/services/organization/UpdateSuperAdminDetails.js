@@ -3,7 +3,6 @@ import axiosInstance from "../../utils/axios config/axiosConfig";
 
 export const UpdateSuperAdminDetails = async (orgId, data) => {
   const body = {
-    username: data?.username,
     saEmail: data?.email,
     firstname: data?.firstName,
     lastname: data?.lastName,

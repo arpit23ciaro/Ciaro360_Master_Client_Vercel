@@ -10,7 +10,6 @@ export const AddOrganization = async (data) => {
     purchaseDate: data?.onboardingDate,
     expiryDate: data?.expireDate,
     saEmail: data?.superAdminEmail,
-    username: data?.superAdminUsername,
     firstname: data?.superAdminFirstName,
     lastname: data?.superAdminLastName,
   };
